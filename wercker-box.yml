@@ -1,0 +1,127 @@
+name: rvm
+version: 6.0.0
+inherits: wercker/ubuntu12.04-webessentials@1.0.4
+type: main
+platform: ubuntu@12.04
+packages:
+    - ruby@2.0.0-p645
+    - ruby@2.0.0-p647
+    - ruby@2.0.0-p648
+    - ruby@2.1.6
+    - ruby@2.1.7
+    - ruby@2.1.8
+    - ruby@2.2.2
+    - ruby@2.2.3
+    - ruby@2.2.4
+    - ruby@2.3.0
+keywords:
+    - ruby
+    - rvm
+script: |
+    # Upgrade to 14.04...
+    sudo apt-get update -y
+    sudo apt-get install -y update-manager-core
+    sudo do-release-upgrade -f DistUpgradeViewNonInteractive -m server -d
+    sudo apt-get install -y aptitude
+    sudo aptitude update
+    sudo aptitude safe-upgrade
+    # Install all the things...
+    sudo apt-get install git zlib1g-dev libreadline-dev libqtwebkit-dev curl -y
+    sudo apt-get remove ruby1.9.1
+    gpg --keyserver hkp://keys.gnupg.net --recv-keys D39DC0E3
+    curl -sSL https://get.rvm.io | bash -s stable
+    echo "bundler -v~>1.9.0" > $HOME/.rvm/gemsets/global.gems
+    source $HOME/.rvm/scripts/rvm
+    rvm install 2.0.0-p645
+    rvm install 2.0.0-p647
+    rvm install 2.0.0-p648
+    rvm install 2.1.6
+    rvm install 2.1.7
+    rvm install 2.1.8
+    rvm install 2.2.2
+    rvm install 2.2.3
+    rvm install 2.2.4
+    rvm install 2.3.0
+    rvm --default use 2.3.0
+    echo "gem: --no-rdoc --no-ri" >> $HOME/.gemrc
+    echo "RAILS_ENV=test" | sudo tee -a /etc/environment
+    echo "RACK_ENV=test" | sudo tee -a /etc/environment
+
+box-detect:
+    priority: 200
+    version:
+    detect:
+        - files:
+            - Gemfile
+
+default-build:
+    ruby-on-rails:
+        priority: 100
+        detect:
+            - files:
+                - config
+        text-to-append: |-
+            # Build definition
+            # See the Rails section on the wercker devcenter:
+            # http://devcenter.wercker.com/articles/languages/ruby/settingup-rails4.html
+            # You will want to define your database as follows:
+            # services:
+            #   - wercker/postgresql
+            # See more about services on our devcenter:
+            # http://devcenter.wercker.com/articles/services/
+            build:
+                steps:
+                    # Uncomment this to force RVM to use a specific Ruby version
+                    # - rvm-use:
+                    #       version: 2.3.0
+
+                    # A step that executes `bundle install` command
+                    - bundle-install
+
+                    # A step that prepares the database.yml using the database in services
+                    # - rails-database-yml
+
+                    # A custom script step, name value is used in the UI
+                    # and the code value contains the command that get executed
+                    - script:
+                        name: echo ruby information
+                        code: |
+                            echo "ruby version $(ruby --version) running"
+                            echo "from location $(which ruby)"
+                            echo -p "gem list: $(gem list)"
+
+                    # Add more steps here:
+                    # - script:
+                    #        name: rspec
+                    #        code: bundle exec rspec
+    ruby:
+        priority : 50
+        detect:
+            - default: true
+        text-to-append: |-
+            # Build definition
+            build:
+                # The steps that will be executed on build
+                # See the Ruby section on the wercker devcenter:
+                # http://devcenter.wercker.com/articles/languages/ruby.html
+                steps:
+                    # Uncomment this to force RVM to use a specific Ruby version
+                    # - rvm-use:
+                    #       version: 2.3.0
+
+                    # A step that executes `bundle install` command
+                    - bundle-install
+
+                    # A custom script step, name value is used in the UI
+                    # and the code value contains the command that get executed
+                    - script:
+                        name: echo ruby information
+                        code: |
+                            echo "ruby version $(ruby --version) running"
+                            echo "from location $(which ruby)"
+                            echo -p "gem list: $(gem list)"
+
+                    # Add more steps here:
+                    # - script:
+                    #    name: rspec
+                    #    code: bundle exec rspec
